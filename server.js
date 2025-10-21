@@ -1,35 +1,24 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
+import xml2js from "xml2js";
 
 const app = express();
 app.use(cors());
 
-const FIO_URL = "https://ib.fio.cz/ib/transparent?a=2803344316";
-
-function parseAmount(text) {
-  return parseFloat(text.replace(/[^\d,]/g, "").replace(",", "."));
-}
-
 app.get("/fio", async (req, res) => {
   try {
-    const response = await fetch(FIO_URL);
+    const response = await fetch("https://ib.fio.cz/ib/transparent?a=2803344316");
     const html = await response.text();
 
-    const matchBalance = html.match(/Zůstatek:<\/th>\s*<td[^>]*>(.*?)<\/td>/);
-    const balanceText = matchBalance ? matchBalance[1].trim() : "0 Kč";
-    const balance = parseAmount(balanceText);
-    const transactions = (html.match(/<tr class="zaznam/g) || []).length;
+    const match = html.match(/Zůstatek[\s\S]*?<td[^>]*>([\d\s,]+) Kč<\/td>/i);
+    const balance = match ? match[1].trim().replace(/\s/g, "") : "0";
 
-    res.json({
-      balance,
-      balanceText,
-      transactions,
-      source: "public_html"
-    });
+    res.json({ balance });
+    console.log("✅ Fio balance načten:", balance);
   } catch (err) {
-    console.error("❌ Chyba při načítání Fio HTML:", err);
-    res.status(500).json({ error: "Nepodařilo se načíst veřejná Fio data" });
+    console.error("❌ Fio API error:", err);
+    res.status(500).json({ error: "Nepodařilo se načíst data z Fio" });
   }
 });
 

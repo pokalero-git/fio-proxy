@@ -1,15 +1,58 @@
-{
-  "name": "fio-proxy",
-  "version": "1.0.0",
-  "main": "server.js",
-  "type": "module",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "xml2js": "^0.6.2"
+// ✅ server.js – Fio API proxy
+import express from "express";
+import fetch from "node-fetch";
+import cors from "cors";
+import xml2js from "xml2js";
+import dotenv from "dotenv";
+
+// Načti proměnné z .env (např. FIO_TOKEN)
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const FIO_TOKEN = process.env.FIO_TOKEN;
+
+// Povolení CORS – aby mohl přistupovat frontend z GitHub Pages
+app.use(cors());
+
+// Hlavní endpoint
+app.get("/fio", async (req, res) => {
+  try {
+    if (!FIO_TOKEN) {
+      return res.status(500).json({ error: "Chybí FIO_TOKEN v prostředí" });
+    }
+
+    const url = `https://www.fio.cz/ib_api/rest/getAccountInfo/${FIO_TOKEN}/xml`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Chyba při načítání z Fio API" });
+    }
+
+    const xml = await response.text();
+
+    // Převod XML → JSON
+    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+
+    // Bezpečné vyčtení zůstatku
+    const balance =
+      parsed?.accountStatement?.info?.closingBalance
+        ? parseFloat(parsed.accountStatement.info.closingBalance)
+        : 0;
+
+    res.json({ balance });
+  } catch (err) {
+    console.error("❌ Chyba Fio proxy:", err);
+    res.status(500).json({ error: "Chyba serveru při zpracování dat" });
   }
-}
+});
+
+// Základní kontrola (root)
+app.get("/", (req, res) => {
+  res.send("💛 Fio proxy běží. Použij endpoint /fio pro JSON výstup.");
+});
+
+// Spuštění serveru
+app.listen(PORT, () => {
+  console.log(`✅ Server běží na portu ${PORT}`);
+});

@@ -1,3 +1,4 @@
+// ✅ server.js – Fio HTML proxy
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
@@ -25,19 +26,25 @@ async function fetchFioBalance() {
   }
 }
 
+// 🧠 Poslední známý zůstatek
 let lastBalance = "0";
+
+// 🌍 Domovská stránka (informace o proxy)
+app.get("/", (req, res) => {
+  res.send("💛 Fio proxy běží. Použij endpoint /fio pro JSON výstup.");
+});
 
 // 🌐 Endpoint vrací poslední načtený zůstatek
 app.get("/fio", (req, res) => {
   res.json({ balance: lastBalance });
 });
 
-// 🕒 Načítání každé 3 minuty
+// 🕒 Načítání každé 3 minuty (180 000 ms)
 setInterval(async () => {
   lastBalance = await fetchFioBalance();
 }, 180000);
 
-// ⏱️ První načtení po startu
+// ⏱️ První načtení ihned po startu
 fetchFioBalance().then((bal) => (lastBalance = bal));
 
 const PORT = process.env.PORT || 3000;

@@ -1,4 +1,4 @@
-// ✅ server.js – HTML proxy pro Fio transparentní účet
+// ✅ server.js – Fio proxy s HTML i JSON výstupem
 import express from "express";
 import fetch from "node-fetch";
 
@@ -33,7 +33,7 @@ async function fetchFioBalance() {
 setInterval(fetchFioBalance, 180000);
 fetchFioBalance();
 
-// 🌍 Hlavní HTML stránka
+// 🌍 Hlavní HTML stránka (pro návštěvníky)
 app.get("/", (req, res) => {
   res.send(`
     <!doctype html>
@@ -47,6 +47,7 @@ app.get("/", (req, res) => {
         h1 { font-size: 2rem; color: #0066cc; }
         p { font-size: 1.2rem; margin: 10px 0; }
         small { color: #666; }
+        code { background: #eee; padding: 2px 6px; border-radius: 4px; }
       </style>
     </head>
     <body>
@@ -54,10 +55,21 @@ app.get("/", (req, res) => {
       <p><strong>Aktuální zůstatek:</strong></p>
       <p style="font-size: 2rem;"><b>${lastBalance}</b> Kč</p>
       <small>Aktualizováno: ${lastUpdated}</small>
+      <hr style="margin: 40px 0;">
+      <p>JSON endpoint pro web:</p>
+      <p><code>https://lively-healing-production.up.railway.app/fio</code></p>
     </body>
     </html>
   `);
 });
 
+// 🌐 Endpoint pro JSON výstup (načítá ho tvůj web)
+app.get("/fio", (req, res) => {
+  res.json({
+    balance: lastBalance,
+    updated: lastUpdated,
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ HTML server běží na portu ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server běží na portu ${PORT}`));

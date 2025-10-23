@@ -14,28 +14,31 @@ async function fetchFioBalance() {
     const match = html.match(/Zůstatek[\s\S]*?<td[^>]*>([\d\s,]+) Kč<\/td>/i);
     const balance = match ? match[1].trim().replace(/\s/g, "") : "0";
 
-    console.log("✅ Fio balance načten:", balance);
+    const now = new Date().toLocaleTimeString("cs-CZ", { hour12: false });
+    console.log(`✅ Fio balance načten: ${balance} Kč (${now})`);
+
     return balance;
   } catch (err) {
-    console.error("❌ Fio API error:", err);
+    const now = new Date().toLocaleTimeString("cs-CZ", { hour12: false });
+    console.error(`❌ Fio API error (${now}):`, err);
     return "0";
   }
 }
 
-// 🧠 Poslední uložená hodnota (drží se v paměti)
+// 🧠 Poslední uložená hodnota
 let lastBalance = "0";
 
-// 🌐 Endpoint, který vrací aktuální zůstatek
+// 🌐 Endpoint vrací poslední načtený zůstatek
 app.get("/fio", (req, res) => {
   res.json({ balance: lastBalance });
 });
 
-// 🕒 Spouštěj kontrolu každé 3 minuty (180 000 ms)
+// 🕒 Kontrola každé 3 minuty (180 000 ms)
 setInterval(async () => {
   lastBalance = await fetchFioBalance();
 }, 180000);
 
-// ⏱️ Pro jistotu načti hned při startu
+// ⏱️ První načtení ihned po startu
 fetchFioBalance().then((bal) => (lastBalance = bal));
 
 const PORT = process.env.PORT || 3000;

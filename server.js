@@ -1,4 +1,4 @@
-// ✅ server.js – Fio HTML proxy (stabilní verze s anti-spam ochranou)
+// ✅ server.js – Fio HTML proxy s limitem 1 volání / 2 min
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
@@ -9,7 +9,7 @@ app.use(cors());
 // 🧠 Poslední známý zůstatek
 let lastBalance = "0";
 
-// 🔁 Funkce pro načtení zůstatku z veřejného HTML Fio transparentního účtu
+// 🔁 Načítání zůstatku z veřejného HTML Fio transparentního účtu
 async function fetchFioBalance() {
   try {
     const response = await fetch("https://ib.fio.cz/ib/transparent?a=2803344316");
@@ -34,15 +34,17 @@ app.get("/", (req, res) => {
   res.send("💛 Fio proxy běží. Použij endpoint /fio pro JSON výstup.");
 });
 
-// 🌐 Endpoint vrací poslední načtený zůstatek (s ochranou proti spamu)
+// 🌐 Endpoint pro JSON výstup (max 1× za 2 minuty)
 let lastRequestTime = 0;
 
 app.get("/fio", (req, res) => {
   const now = Date.now();
 
-  // ⏱️ ochrana – maximálně 1 dotaz za 10 s
-  if (now - lastRequestTime < 10000) {
-    return res.status(429).json({ error: "Too many requests – počkej pár vteřin" });
+  // ⏱️ Ochrana – max. 1 požadavek každé 2 minuty
+  if (now - lastRequestTime < 120000) {
+    return res.status(429).json({
+      error: "Too many requests – počkej 2 minuty",
+    });
   }
 
   lastRequestTime = now;

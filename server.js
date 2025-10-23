@@ -1,4 +1,4 @@
-// ✅ server.js – Fio proxy s HTML i JSON výstupem
+// ✅ server.js – Fio proxy s HTML i JSON výstupem (stabilní verze)
 import express from "express";
 import fetch from "node-fetch";
 
@@ -29,11 +29,13 @@ async function fetchFioBalance() {
   }
 }
 
-// 🕒 Aktualizace každé 3 minuty
+// 🕒 Automatické načítání každé 3 minuty
 setInterval(fetchFioBalance, 180000);
+
+// ⏱️ První načtení po startu
 fetchFioBalance();
 
-// 🌍 Hlavní HTML stránka (pro návštěvníky)
+// 🌍 Hlavní HTML stránka
 app.get("/", (req, res) => {
   res.send(`
     <!doctype html>
@@ -63,7 +65,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// 🌐 Endpoint pro JSON výstup (načítá ho tvůj web)
+// 🌐 JSON endpoint pro web nebo front-end
 app.get("/fio", (req, res) => {
   res.json({
     balance: lastBalance,

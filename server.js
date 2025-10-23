@@ -1,12 +1,12 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import xml2js from "xml2js";
 
 const app = express();
 app.use(cors());
 
-app.get("/fio", async (req, res) => {
+// 🔁 Funkce pro načtení zůstatku z Fio transparentního účtu
+async function fetchFioBalance() {
   try {
     const response = await fetch("https://ib.fio.cz/ib/transparent?a=2803344316");
     const html = await response.text();
@@ -14,13 +14,29 @@ app.get("/fio", async (req, res) => {
     const match = html.match(/Zůstatek[\s\S]*?<td[^>]*>([\d\s,]+) Kč<\/td>/i);
     const balance = match ? match[1].trim().replace(/\s/g, "") : "0";
 
-    res.json({ balance });
     console.log("✅ Fio balance načten:", balance);
+    return balance;
   } catch (err) {
     console.error("❌ Fio API error:", err);
-    res.status(500).json({ error: "Nepodařilo se načíst data z Fio" });
+    return "0";
   }
+}
+
+// 🧠 Poslední uložená hodnota (drží se v paměti)
+let lastBalance = "0";
+
+// 🌐 Endpoint, který vrací aktuální zůstatek
+app.get("/fio", (req, res) => {
+  res.json({ balance: lastBalance });
 });
+
+// 🕒 Spouštěj kontrolu každé 3 minuty (180 000 ms)
+setInterval(async () => {
+  lastBalance = await fetchFioBalance();
+}, 180000);
+
+// ⏱️ Pro jistotu načti hned při startu
+fetchFioBalance().then((bal) => (lastBalance = bal));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Proxy běží na portu ${PORT}`));

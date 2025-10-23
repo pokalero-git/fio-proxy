@@ -5,7 +5,7 @@ import fetch from "node-fetch";
 const app = express();
 app.use(cors());
 
-// 🔁 Funkce pro načtení zůstatku z Fio transparentního účtu
+// 🔁 Funkce pro načtení zůstatku z veřejného HTML Fio transparentního účtu
 async function fetchFioBalance() {
   try {
     const response = await fetch("https://ib.fio.cz/ib/transparent?a=2803344316");
@@ -20,12 +20,11 @@ async function fetchFioBalance() {
     return balance;
   } catch (err) {
     const now = new Date().toLocaleTimeString("cs-CZ", { hour12: false });
-    console.error(`❌ Fio API error (${now}):`, err);
+    console.error(`❌ Fio HTML error (${now}):`, err);
     return "0";
   }
 }
 
-// 🧠 Poslední uložená hodnota
 let lastBalance = "0";
 
 // 🌐 Endpoint vrací poslední načtený zůstatek
@@ -33,12 +32,12 @@ app.get("/fio", (req, res) => {
   res.json({ balance: lastBalance });
 });
 
-// 🕒 Kontrola každé 3 minuty (180 000 ms)
+// 🕒 Načítání každé 3 minuty
 setInterval(async () => {
   lastBalance = await fetchFioBalance();
 }, 180000);
 
-// ⏱️ První načtení ihned po startu
+// ⏱️ První načtení po startu
 fetchFioBalance().then((bal) => (lastBalance = bal));
 
 const PORT = process.env.PORT || 3000;
